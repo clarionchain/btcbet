@@ -77,4 +77,24 @@ describe("market rules", () => {
       parseConfig({ ...process.env, BETTING_LOCK_SECONDS: "300" }),
     ).toThrow();
   });
+  it("treats empty env strings as unset", () => {
+    const c = parseConfig({
+      ...process.env,
+      SSE_HEARTBEAT_SECONDS: "",
+      BETTING_LOCK_SECONDS: "",
+    });
+    expect(c.SSE_HEARTBEAT_SECONDS).toBe(10);
+    expect(c.BETTING_LOCK_SECONDS).toBe(15);
+  });
+  it("fills required secrets during next build when they are blank", () => {
+    const c = parseConfig({
+      NEXT_PHASE: "phase-production-build",
+      DATABASE_URL: "",
+      ADMIN_SECRET: "",
+      AGENT_TOKEN_PEPPER: "",
+      SSE_HEARTBEAT_SECONDS: "",
+    });
+    expect(c.DATABASE_URL.startsWith("postgres")).toBe(true);
+    expect(c.SSE_HEARTBEAT_SECONDS).toBe(10);
+  });
 });

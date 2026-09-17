@@ -1,20 +1,39 @@
 import "dotenv/config";
 import { z } from "zod";
 const positive = z.coerce.number().int().positive();
-const building =
-  process.env.NEXT_PHASE === "phase-production-build" ||
-  process.env.npm_lifecycle_event === "build";
+function isBuild(env: NodeJS.ProcessEnv) {
+  return (
+    env.NEXT_PHASE === "phase-production-build" ||
+    env.npm_lifecycle_event === "build" ||
+    process.env.NEXT_PHASE === "phase-production-build" ||
+    process.env.npm_lifecycle_event === "build"
+  );
+}
+function dropBlanks(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
+  const out: NodeJS.ProcessEnv = {};
+  for (const [key, value] of Object.entries(env)) {
+    if (value !== "") out[key] = value;
+  }
+  return out;
+}
 function envForParse(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
-  if (env.DATABASE_URL && env.ADMIN_SECRET && env.AGENT_TOKEN_PEPPER) return env;
-  if (!building) return env;
+  const cleaned = dropBlanks(env);
+  if (
+    cleaned.DATABASE_URL &&
+    cleaned.ADMIN_SECRET &&
+    cleaned.AGENT_TOKEN_PEPPER
+  )
+    return cleaned;
+  if (!isBuild(cleaned)) return cleaned;
   return {
-    ...env,
+    ...cleaned,
     DATABASE_URL:
-      env.DATABASE_URL ?? "postgresql://build:build@localhost/build",
+      cleaned.DATABASE_URL || "postgresql://build:build@localhost/build",
     ADMIN_SECRET:
-      env.ADMIN_SECRET ?? "build-only-placeholder-not-a-secret-0001",
+      cleaned.ADMIN_SECRET || "build-only-placeholder-not-a-secret-0001",
     AGENT_TOKEN_PEPPER:
-      env.AGENT_TOKEN_PEPPER ?? "build-only-placeholder-not-a-secret-0002",
+      cleaned.AGENT_TOKEN_PEPPER ||
+      "build-only-placeholder-not-a-secret-0002",
   };
 }
 const schema = z.object({
