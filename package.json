@@ -1,0 +1,48 @@
+{
+  "name": "btcbet",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev -p 3085",
+    "build": "next build",
+    "start": "tsx scripts/validate-env.ts && next start -H 0.0.0.0 -p 3085",
+    "worker": "tsx src/worker.ts",
+    "migrate": "tsx scripts/migrate.ts",
+    "admin": "tsx scripts/admin.ts",
+    "demo": "tsx scripts/demo.ts",
+    "test": "vitest run",
+    "test:browser": "playwright test",
+    "typecheck": "tsc --noEmit",
+    "test:db": "tsx scripts/test-db.ts"
+  },
+  "dependencies": {
+    "@secondts/bark": "0.23.0",
+    "decimal.js": "10.6.0",
+    "dotenv": "17.3.1",
+    "drizzle-orm": "0.45.2",
+    "next": "16.3.4",
+    "pg": "8.16.3",
+    "qrcode": "^1.5.4",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "ws": "8.21.3",
+    "zod": "4.3.6"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.58.2",
+    "@types/node": "22.19.11",
+    "@types/pg": "8.16.0",
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "@types/ws": "8.18.1",
+    "tsx": "4.21.0",
+    "typescript": "5.9.3",
+    "vite": "7.3.6",
+    "vitest": "4.1.11"
+  },
+  "overrides": {
+    "esbuild": "^0.25.12"
+  }
+}

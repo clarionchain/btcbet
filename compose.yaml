@@ -1,0 +1,64 @@
+name: btcbet
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: btcbet
+      POSTGRES_USER: btcbet
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - ledger:/var/lib/postgresql/data
+    ports:
+      - '127.0.0.1:5485:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U btcbet -d btcbet']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks: [internal]
+  app:
+    build: .
+    image: btcbet:0.1.0
+    container_name: btcbet-app
+    restart: unless-stopped
+    volumes:
+      - ./.wallet:/wallet
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://btcbet:${DB_PASSWORD}@db:5432/btcbet
+    command: npm run start
+    depends_on:
+      db:
+        condition: service_healthy
+    networks: [internal, caddy]
+    ports:
+      - '127.0.0.1:3085:3085'
+    healthcheck:
+      test: ['CMD','node','-e',"fetch('http://127.0.0.1:3085/btcbet/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+  worker:
+    image: btcbet:0.1.0
+    restart: unless-stopped
+    volumes:
+      - ./.wallet:/wallet
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://btcbet:${DB_PASSWORD}@db:5432/btcbet
+    command: npm run worker
+    depends_on:
+      db:
+        condition: service_healthy
+    networks: [internal]
+networks:
+  internal:
+    ipam:
+      config:
+        - subnet: 10.211.85.0/24
+  caddy:
+    external: true
+    name: cc-stack_default
+volumes:
+  ledger:

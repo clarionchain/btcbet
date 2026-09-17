@@ -1,0 +1,13 @@
+node_modules
+.next
+.git
+.env
+.env.*
+backups
+test-results
+playwright-report
+
+.wallet
+.test-wallet
+
+agent-identity*.json

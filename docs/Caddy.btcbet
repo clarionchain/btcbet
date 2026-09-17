@@ -1,0 +1,7 @@
+	# Example Caddy snippet: preserve Next.js /btcbet prefix and flush SSE immediately.
+	@btcbet path /btcbet /btcbet/*
+	handle @btcbet {
+		reverse_proxy btcbet-app:3085 {
+			flush_interval -1
+		}
+	}

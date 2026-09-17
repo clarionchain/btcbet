@@ -1,0 +1,461 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "BTCBet API",
+    "version": "1.0.0",
+    "description": "Signet-only agent API and browser-managed human Keel flow. Monetary totals are decimal integer strings. No credentials in URLs."
+  },
+  "servers": [
+    {
+      "url": "https://clarionlab.dev/btcbet/api/v1"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer"
+      },
+      "humanCookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "btcbet_human"
+      }
+    },
+    "schemas": {
+      "PaymentProposal": {
+        "type": "object",
+        "required": [
+          "agentPublicKey",
+          "name",
+          "roundId",
+          "direction",
+          "amountSats",
+          "returnAddress",
+          "idempotencyKey",
+          "signature"
+        ],
+        "properties": {
+          "agentPublicKey": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "roundId": {
+            "type": "string"
+          },
+          "direction": {
+            "type": "string"
+          },
+          "amountSats": {
+            "type": "integer"
+          },
+          "returnAddress": {
+            "type": "string"
+          },
+          "idempotencyKey": {
+            "type": "string"
+          },
+          "signature": {
+            "type": "string"
+          }
+        }
+      },
+      "PaymentConfirmation": {
+        "type": "object",
+        "required": [
+          "challengeId",
+          "signature"
+        ],
+        "properties": {
+          "challengeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "signature": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/humans/register": {
+      "post": {
+        "summary": "Create a human player and set its secure browser session",
+        "responses": {
+          "201": { "description": "Profile created; recovery code shown once" },
+          "400": { "description": "Invalid name or Keel return address" }
+        }
+      }
+    },
+    "/humans/recover": {
+      "post": {
+        "summary": "Restore a human browser session with its recovery code",
+        "responses": {
+          "200": { "description": "Session restored" },
+          "401": { "description": "Invalid or expired recovery code" }
+        }
+      }
+    },
+    "/humans/me": {
+      "get": {
+        "summary": "Human profile, performance, and recent private bets",
+        "security": [{ "humanCookie": [] }],
+        "responses": {
+          "200": { "description": "Player state" },
+          "401": { "description": "Human session required" }
+        }
+      }
+    },
+    "/humans/bets": {
+      "post": {
+        "summary": "Create a human wager and unique Ark payment request",
+        "security": [{ "humanCookie": [] }],
+        "responses": {
+          "402": { "description": "Payment required; returns QR URL, exact address, amount, and cutoff" },
+          "409": { "description": "Round closed or existing accepted wager" }
+        }
+      }
+    },
+    "/humans/bets/{betId}/confirm": {
+      "post": {
+        "summary": "Poll BTCBet's wallet for payment acceptance",
+        "security": [{ "humanCookie": [] }],
+        "responses": {
+          "200": { "description": "Final acceptance or rejection state" },
+          "402": { "description": "Still waiting; do not pay again" }
+        }
+      }
+    },
+    "/humans/bets/{betId}/qr": {
+      "get": {
+        "summary": "Keel-compatible QR containing the Ark destination",
+        "security": [{ "humanCookie": [] }],
+        "responses": {
+          "200": { "description": "Private SVG QR" },
+          "404": { "description": "Bet does not belong to this player" }
+        }
+      }
+    },
+    "/markets/current": {
+      "get": {
+        "summary": "Current round, pools, recorded prices, rules, and optional authenticated position",
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "503": {
+            "description": "Unavailable"
+          }
+        }
+      }
+    },
+    "/markets": {
+      "get": {
+        "summary": "Last 20 completed rounds",
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "503": {
+            "description": "Unavailable"
+          }
+        }
+      }
+    },
+    "/markets/{roundId}": {
+      "get": {
+        "summary": "Round detail and public positions",
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "503": {
+            "description": "Unavailable"
+          }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "roundId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/bets/{betId}": {
+      "get": {
+        "summary": "Authenticated agent payment and settlement state",
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "503": {
+            "description": "Unavailable"
+          }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "betId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/agents/me/performance": {
+      "get": {
+        "summary": "Authenticated agent performance",
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "503": {
+            "description": "Unavailable"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/events": {
+      "get": {
+        "summary": "SSE stream with event IDs and heartbeats",
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "503": {
+            "description": "Unavailable"
+          }
+        }
+      }
+    },
+    "/admin/status": {
+      "get": {
+        "summary": "Admin health and failed obligations",
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Missing or invalid credential"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "503": {
+            "description": "Unavailable"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/bets": {
+      "post": {
+        "summary": "Create an intent; exact payment before lock is required for acceptance",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "roundId",
+                  "direction",
+                  "amountSats",
+                  "returnAddress",
+                  "idempotencyKey"
+                ],
+                "properties": {
+                  "roundId": {
+                    "type": "string"
+                  },
+                  "direction": {
+                    "type": "string",
+                    "enum": [
+                      "UP",
+                      "DOWN"
+                    ]
+                  },
+                  "amountSats": {
+                    "type": "integer",
+                    "enum": [
+                      1000,
+                      5000,
+                      10000
+                    ]
+                  },
+                  "returnAddress": {
+                    "type": "string"
+                  },
+                  "idempotencyKey": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 120
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created or replayed original intent; not yet accepted"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Invalid bearer token"
+          },
+          "409": {
+            "description": "Closed round, existing accepted wager, or idempotency conflict"
+          },
+          "422": {
+            "description": "Spending limit exceeded"
+          },
+          "429": {
+            "description": "Write limit exceeded"
+          }
+        }
+      }
+    },
+    "/auth": {
+      "get": {
+        "summary": "Discover payment-based agent authentication and active wallet mode",
+        "responses": {
+          "200": {
+            "description": "Discovery document"
+          }
+        }
+      }
+    },
+    "/payment-auth/challenge": {
+      "post": {
+        "summary": "Issue a signed Ark payment challenge",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaymentProposal"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Payment authenticated; returns a private 24-hour bearer session (confirmation only)"
+          },
+          "402": {
+            "description": "Payment challenge issued, or awaiting verified eligible receipt"
+          },
+          "401": {
+            "description": "Invalid signature, disabled agent, or revoked/expired session"
+          },
+          "409": {
+            "description": "Round unavailable, conflicting request, or rejected payment"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        }
+      }
+    },
+    "/payment-auth/confirm": {
+      "post": {
+        "summary": "Authenticate after wallet-verified payment",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaymentConfirmation"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Payment authenticated; returns a private 24-hour bearer session (confirmation only)"
+          },
+          "402": {
+            "description": "Payment challenge issued, or awaiting verified eligible receipt"
+          },
+          "401": {
+            "description": "Invalid signature, disabled agent, or revoked/expired session"
+          },
+          "409": {
+            "description": "Round unavailable, conflicting request, or rejected payment"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        }
+      }
+    }
+  }
+}
